@@ -993,6 +993,9 @@ NSString static *const kWKYTPlayerSyndicationRegexPattern = @"^https://tpc.googl
         if (completionHandler && [response isKindOfClass: [NSString class]]) {
             completionHandler(response, error);
         }
+        else {
+            completionHandler(response, error);
+        }
     }];
 }
 
