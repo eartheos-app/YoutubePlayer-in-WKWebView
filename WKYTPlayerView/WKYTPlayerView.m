@@ -290,7 +290,7 @@ NSString static *const kWKYTPlayerSyndicationRegexPattern = @"^https://tpc.googl
                 if (jsonDeserializationError) {
                     completionHandler(nil, jsonDeserializationError);
                 }
-
+                
                 completionHandler(playbackRates, nil);
             }
         }
@@ -328,12 +328,19 @@ NSString static *const kWKYTPlayerSyndicationRegexPattern = @"^https://tpc.googl
 
 - (void)getPlayerState:(void (^ __nullable)(WKYTPlayerState playerState, NSError * __nullable error))completionHandler
 {
-    [self stringFromEvaluatingJavaScript:@"player.getPlayerState();" completionHandler:^(NSString * _Nullable response, NSError * _Nullable error) {
+    [self responseFromEvaluatingJavaScript:@"player.getPlayerState();" completion:^(id  _Nullable response, NSError * _Nullable error) {
         if (completionHandler) {
             if (error) {
                 completionHandler(kWKYTPlayerStateUnknown, error);
             } else {
-                completionHandler([WKYTPlayerView playerStateForString:response], nil);
+                if ([response isKindOfClass:[NSNumber class]]) {
+                    NSNumber *stateNumber = (NSNumber *)response;
+                    NSString *stateString = [stateNumber stringValue];
+                    completionHandler([WKYTPlayerView playerStateForString:stateString], nil);
+                }
+                else {
+                    completionHandler(kWKYTPlayerStateUnknown, error);
+                }
             }
         }
     }];
@@ -341,12 +348,17 @@ NSString static *const kWKYTPlayerSyndicationRegexPattern = @"^https://tpc.googl
 
 - (void)getCurrentTime:(void (^ __nullable)(float currentTime, NSError * __nullable error))completionHandler
 {
-    [self stringFromEvaluatingJavaScript:@"player.getCurrentTime();" completionHandler:^(NSString * _Nullable response, NSError * _Nullable error) {
+    [self responseFromEvaluatingJavaScript:@"player.getCurrentTime();" completion:^(id  _Nullable response, NSError * _Nullable error) {
         if (completionHandler) {
             if (error) {
                 completionHandler(0, error);
             } else {
-                completionHandler([response floatValue], nil);
+                if ([response isKindOfClass: [NSNumber class]]) {
+                    completionHandler([response floatValue], nil);
+                }
+                else {
+                    completionHandler(0, nil);
+                }
             }
         }
     }];
@@ -430,7 +442,7 @@ NSString static *const kWKYTPlayerSyndicationRegexPattern = @"^https://tpc.googl
                 if (jsonDeserializationError) {
                     completionHandler(nil, jsonDeserializationError);
                 }
-
+                
                 completionHandler(videoIds, nil);
             }
         }
@@ -481,7 +493,7 @@ NSString static *const kWKYTPlayerSyndicationRegexPattern = @"^https://tpc.googl
                     WKYTPlaybackQuality quality = [WKYTPlayerView playbackQualityForString:rawQualityValue];
                     [levels addObject:[NSNumber numberWithInt:quality]];
                 }
-
+                
                 completionHandler(levels, nil);
             }
         }
@@ -815,33 +827,33 @@ NSString static *const kWKYTPlayerSyndicationRegexPattern = @"^https://tpc.googl
     
     self.webView.translatesAutoresizingMaskIntoConstraints = NO;
     NSLayoutConstraint *topConstraint = [NSLayoutConstraint constraintWithItem:self.webView
-                                                                 attribute:NSLayoutAttributeTop
-                                                                 relatedBy:NSLayoutRelationEqual
-                                                                    toItem:self
-                                                                 attribute:NSLayoutAttributeTop
-                                                                multiplier:1.0
-                                                                  constant:0.0];
+                                                                     attribute:NSLayoutAttributeTop
+                                                                     relatedBy:NSLayoutRelationEqual
+                                                                        toItem:self
+                                                                     attribute:NSLayoutAttributeTop
+                                                                    multiplier:1.0
+                                                                      constant:0.0];
     NSLayoutConstraint *leftConstraint = [NSLayoutConstraint constraintWithItem:self.webView
-                                                                 attribute:NSLayoutAttributeLeft
-                                                                 relatedBy:NSLayoutRelationEqual
-                                                                    toItem:self
-                                                                 attribute:NSLayoutAttributeLeft
-                                                                multiplier:1.0
-                                                                  constant:0.0];
+                                                                      attribute:NSLayoutAttributeLeft
+                                                                      relatedBy:NSLayoutRelationEqual
+                                                                         toItem:self
+                                                                      attribute:NSLayoutAttributeLeft
+                                                                     multiplier:1.0
+                                                                       constant:0.0];
     NSLayoutConstraint *rightConstraint = [NSLayoutConstraint constraintWithItem:self.webView
-                                                                 attribute:NSLayoutAttributeRight
-                                                                 relatedBy:NSLayoutRelationEqual
-                                                                    toItem:self
-                                                                 attribute:NSLayoutAttributeRight
-                                                                multiplier:1.0
-                                                                  constant:0.0];
+                                                                       attribute:NSLayoutAttributeRight
+                                                                       relatedBy:NSLayoutRelationEqual
+                                                                          toItem:self
+                                                                       attribute:NSLayoutAttributeRight
+                                                                      multiplier:1.0
+                                                                        constant:0.0];
     NSLayoutConstraint *bottomConstraint = [NSLayoutConstraint constraintWithItem:self.webView
-                                                                 attribute:NSLayoutAttributeBottom
-                                                                 relatedBy:NSLayoutRelationEqual
-                                                                    toItem:self
-                                                                 attribute:NSLayoutAttributeBottom
-                                                                multiplier:1.0
-                                                                  constant:0.0];
+                                                                        attribute:NSLayoutAttributeBottom
+                                                                        relatedBy:NSLayoutRelationEqual
+                                                                           toItem:self
+                                                                        attribute:NSLayoutAttributeBottom
+                                                                       multiplier:1.0
+                                                                         constant:0.0];
     NSArray *constraints = @[topConstraint, leftConstraint, rightConstraint, bottomConstraint];
     [self addConstraints:constraints];
     
@@ -907,7 +919,6 @@ NSString static *const kWKYTPlayerSyndicationRegexPattern = @"^https://tpc.googl
  * @param index 0-index position of video to start playback on.
  * @param startSeconds Seconds after start of video to begin playback.
  * @param suggestedQuality Suggested WKYTPlaybackQuality to play the videos.
- * @return The result of cueing the playlist.
  */
 - (void)cuePlaylist:(NSString *)cueingString
               index:(int)index
@@ -930,7 +941,6 @@ NSString static *const kWKYTPlayerSyndicationRegexPattern = @"^https://tpc.googl
  * @param index 0-index position of video to start playback on.
  * @param startSeconds Seconds after start of video to begin playback.
  * @param suggestedQuality Suggested WKYTPlaybackQuality to play the videos.
- * @return The result of cueing the playlist.
  */
 - (void)loadPlaylist:(NSString *)cueingString
                index:(int)index
@@ -960,15 +970,27 @@ NSString static *const kWKYTPlayerSyndicationRegexPattern = @"^https://tpc.googl
     return [NSString stringWithFormat:@"[%@]", [formattedVideoIds componentsJoinedByString:@", "]];
 }
 
+
+
+- (void)responseFromEvaluatingJavaScript:(NSString *)jsToExecute completion:(void (^ __nullable)(id _Nullable response, NSError * __nullable error))completionHandler{
+    [self.webView evaluateJavaScript:jsToExecute completionHandler:^(id _Nullable result, NSError * _Nullable error) {
+        if (completionHandler) {
+            completionHandler(result, error);
+        }
+    }];
+}
+
+
+
+
 /**
  * Private method for evaluating JavaScript in the WebView.
  *
  * @param jsToExecute The JavaScript code in string format that we want to execute.
- * @return JavaScript response from evaluating code.
  */
 - (void)stringFromEvaluatingJavaScript:(NSString *)jsToExecute completionHandler:(void (^ __nullable)(NSString * __nullable response, NSError * __nullable error))completionHandler{
-    [self.webView evaluateJavaScript:jsToExecute completionHandler:^(NSString * _Nullable response, NSError * _Nullable error) {
-        if (completionHandler) {
+    [self.webView evaluateJavaScript:jsToExecute completionHandler:^(id _Nullable response, NSError * _Nullable error) {
+        if (completionHandler && [response isKindOfClass: [NSString class]]) {
             completionHandler(response, error);
         }
     }];
